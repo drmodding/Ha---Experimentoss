@@ -1,0 +1,135 @@
+esphome:
+  name: lilgo
+  friendly_name: LilGO
+
+external_components:
+  - source: github://landonr/lilygo-tdisplays3-esphome
+    components: [tdisplays3]
+
+globals:
+   - id: coords
+     type: int
+     restore_value: no
+     initial_value: '10'
+   - id: length
+     type: int
+     restore_value: no
+     initial_value: '10'
+interval:
+  - interval: 1ms
+    then:
+        lambda: |-
+            if (id(coords) < -(id(length))) {
+             id(coords) = 10;
+            }
+            else  {
+               id(coords) -= 6;
+            } 
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "enc-code"
+
+ota:
+  password: "passwd"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: on
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Lilgo Fallback Hotspot"
+    password: "zdLcBeJSQtVu"
+
+time:
+  - platform: sntp
+    id: sntp_time
+    servers: time.google.com
+    timezone: CST6
+
+switch:
+  - platform: gpio
+    pin: GPIO38
+    name: "Backlight"
+    id: backlight
+    internal: true
+    restore_mode: RESTORE_DEFAULT_ON
+
+font:
+  - file: "gfonts://Vina+Sans"
+    id: vinasans
+    size: 32
+  - file: "gfonts://Vina+Sans"
+    id: vinasans2
+    size: 36
+  - file: "gfonts://Roboto"
+    id: robotonto
+    size: 20
+    glyphs:  |
+      ! "#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz°{|}~¡¢£¤¥¦§¨©ª«¬®¯±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ
+  # gfonts://family[@weight]
+  - file: "gfonts://Roboto"
+    id: roboto
+    size: 20
+    glyphs:  |
+       ! "#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz°{|}~¡¢£¤¥¦§¨©ª«¬®¯±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ
+  - file:
+      type: gfonts
+      family: Roboto
+      weight: 900
+    id: roboto2
+    size: 16
+    glyphs:  |
+       ! "#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz°{|}~¡¢£¤¥¦§¨©ª«¬®¯±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ
+
+sensor:
+  - platform: homeassistant
+    id: tlalpan_temperature
+    entity_id: sensor.openweathermapmx_temperature
+    internal: true
+
+text_sensor:
+  - platform: homeassistant
+    id: sonos_current_song
+    entity_id: sensor.reproduccion_sonos_estancia_principal
+    internal: True
+
+animation:
+  - file: "images/sup-batman.gif"
+    id: my_animation
+    resize: 310x610
+    type: RGB565
+
+display:
+  - platform: tdisplays3
+    id: disp
+    update_interval: 0.1s
+    rotation: 270
+    lambda: |-
+            //Ingress shown animation Frame.
+            id(my_animation).next_frame();
+            // Draw the animation my_animation at position [x=0,y=0]
+            it.image(0, 0, id(my_animation), COLOR_ON, COLOR_OFF);
+            it.printf(30, 135, id(vinasans), Color(255, 255, 255), id(sntp_time).now().strftime("%I:%M:%S %p %d-%m-%Y ").c_str());
+            if (id(tlalpan_temperature).has_state()) {
+               it.printf(302, 20, id(vinasans2), Color(10, 10, 10), TextAlign::TOP_RIGHT , "%.1f°", id(tlalpan_temperature).state);
+               it.printf(300, 20, id(vinasans), Color(255, 234, 0), TextAlign::TOP_RIGHT , "%.1f°", id(tlalpan_temperature).state);
+            } 
+            if (id(sonos_current_song).has_state() && std::string(id(sonos_current_song)->state) != "OFF" && std::string(id(sonos_current_song)->state) != "None - None (None)") {
+               std::string printout = std::string(id(sonos_current_song)->state);
+               int clength = printout.length();
+               id(length) = clength*6;
+               it.printf(id(coords), 120, id(roboto2), Color(255, 234, 0), "%s", printout.c_str());
+             }
+captive_portal:
