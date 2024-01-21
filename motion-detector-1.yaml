@@ -1,0 +1,269 @@
+esphome:
+  name: "motion-detector-1"
+  friendly_name: Detector Vestidor
+
+esp32:
+  board: esp32-c3-devkitm-1
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "XXXX"
+
+ota:
+  password: "XXXX"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  fast_connect: True #necesario si utilizan una red que no es visible.
+  manual_ip:
+    static_ip: x.x.x.x
+    gateway: x.x.x.x
+    subnet: x.x.x.x
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Esp32C3-Devel Fallback Hotspot"
+    password: "xe9i3I0RjVw3"
+
+captive_portal:
+
+uart:
+  - id: ld2410_uart
+    tx_pin: GPIO21
+    rx_pin: GPIO20
+    baud_rate: 256000
+    parity: NONE
+    stop_bits: 1
+
+
+ld2410:
+  uart_id: ld2410_uart
+
+number:
+  - platform: ld2410
+    timeout:
+      name: Timeout
+    light_threshold:
+      name: Light Threshold
+    max_move_distance_gate:
+      name: Max Move Distance Gate
+    max_still_distance_gate:
+      name: Max Still Distance Gate
+    g0:
+      move_threshold:
+        name: g0 move threshold
+      still_threshold:
+        name: g0 still threshold
+    g1:
+      move_threshold:
+        name: g1 move threshold
+      still_threshold:
+        name: g1 still threshold
+    g2:
+      move_threshold:
+        name: g2 move threshold
+      still_threshold:
+        name: g2 still threshold
+    g3:
+      move_threshold:
+        name: g3 move threshold
+      still_threshold:
+        name: g3 still threshold
+    g4:
+      move_threshold:
+        name: g4 move threshold
+      still_threshold:
+        name: g4 still threshold
+    g5:
+      move_threshold:
+        name: g5 move threshold
+      still_threshold:
+        name: g5 still threshold
+    g6:
+      move_threshold:
+        name: g6 move threshold
+      still_threshold:
+        name: g6 still threshold
+    g7:
+      move_threshold:
+        name: g7 move threshold
+      still_threshold:
+        name: g7 still threshold
+    g8:
+      move_threshold:
+        name: g8 move threshold
+      still_threshold:
+        name: g8 still threshold
+
+select:
+  - platform: ld2410
+    distance_resolution:
+      name: Distance Resolution
+    baud_rate:
+      name: Baud Rate
+    light_function:
+      name: Light Function
+    out_pin_level:
+      name: Out Pin Level
+
+sensor:
+  - platform: ld2410
+    light:
+      name: Light
+    moving_distance:
+      name : Moving Distance
+    still_distance:
+      name: Still Distance
+    moving_energy:
+      name: Move Energy
+    still_energy:
+      name: Still Energy
+    detection_distance:
+      name: Detection Distance
+    g0:
+      move_energy:
+        name: g0 move energy
+      still_energy:
+        name: g0 still energy
+    g1:
+      move_energy:
+        name: g1 move energy
+      still_energy:
+        name: g1 still energy
+    g2:
+      move_energy:
+        name: g2 move energy
+      still_energy:
+        name: g2 still energy
+    g3:
+      move_energy:
+        name: g3 move energy
+      still_energy:
+        name: g3 still energy
+    g4:
+      move_energy:
+        name: g4 move energy
+      still_energy:
+        name: g4 still energy
+    g5:
+      move_energy:
+        name: g5 move energy
+      still_energy:
+        name: g5 still energy
+    g6:
+      move_energy:
+        name: g6 move energy
+      still_energy:
+        name: g6 still energy
+    g7:
+      move_energy:
+        name: g7 move energy
+      still_energy:
+        name: g7 still energy
+    g8:
+      move_energy:
+        name: g8 move energy
+      still_energy:
+        name: g8 still energy
+
+  - platform: wifi_signal
+    name: "WiFi Signal dB"
+    id: wifi_signal_db
+    update_interval: 60s
+    entity_category: "diagnostic"
+    internal: True
+
+  - platform: copy 
+    source_id: wifi_signal_db
+    name: "WiFi Signal Percent"
+    icon: "mdi:wifi-settings"
+    filters:
+      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
+    unit_of_measurement: "%"
+    entity_category: "diagnostic"
+  - platform: internal_temperature
+    name: "Internal Temperature"
+
+binary_sensor:
+  - platform: ld2410
+    has_target:
+      name: Presence
+      on_press:
+        - script.execute: neopixel_red
+    has_moving_target:
+      name: Moving Target
+    has_still_target:
+      name: Still Target
+    out_pin_presence_status:
+      name: Out Pin Presence Status
+  - platform: gpio
+    pin: GPIO0
+    name: gpio out pin presence
+    device_class: presence
+    on_release:
+     - script.execute: neopixel_green
+
+switch:
+  - platform: ld2410
+    engineering_mode:
+      name: Engineering Mode
+    bluetooth:
+      name: Control Bluetooth
+
+button:
+  - platform: ld2410
+    factory_reset:
+      name: Factory Reset
+    restart:
+      name: Restart
+    query_params:
+      name: Query Params
+
+text_sensor:
+  - platform: ld2410
+    version:
+      name: Firmware Version
+    mac_address:
+      name: MAC
+
+light:
+  - platform: neopixelbus
+    id: neopixel_light
+    type: GRB
+    variant: WS2811
+    pin: GPIO03
+    num_leds: 1
+    name: "Status Light"
+    internal: True
+
+script:
+  - id: neopixel_red
+    then:
+      - light.turn_on:
+          id: neopixel_light
+          red: 100%
+          green: 0%
+          blue: 0%
+          brightness: 70%
+      - delay: 1s
+      - light.turn_off:
+          id: neopixel_light
+
+  - id: neopixel_green
+    then:
+      - light.turn_on:
+          id: neopixel_light
+          red: 0%
+          green: 100%
+          blue: 0%
+          brightness: 70%
+      - delay: 1s
+      - light.turn_off:
+          id: neopixel_light
