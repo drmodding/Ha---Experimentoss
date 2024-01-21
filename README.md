@@ -1,1 +1,11 @@
-Diversos codigos que he ido generando para ESPHOME, no necesariamente son mios pero los he adaptado para que hagan alguna cosa que me sirva a mi...
+Aqui ire colocando los codigos YAML que utilizo en mi casa.
+
+Detector de movimiento LD2410 en ESPHOME
+
+Ingredientes:
+
+ESP32-C3
+Sensor LD2410
+ESPHOME:
+LED ws2811
+
